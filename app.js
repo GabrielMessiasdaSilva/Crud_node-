@@ -5,6 +5,8 @@ const engine = require('express-handlebars').engine;
 const bodyParser = require('body-parser');
 const post = require('./Models/post');
 const { where } = require('sequelize');
+const handlebarsHelper = require("handlebars");
+
 
 
 
@@ -24,13 +26,13 @@ app.get("/", function (req, res) {
 });
 
 app.get("/consulta", function (req, res) {
-    post.findAll().then(function (posts) {
-        res.render('consulta', { post: posts })
-        console.log(posts)
+    post.findAll().then(function (post) {
+        res.render("consulta", { post })
     }).catch(function (erro) {
-        res.send("Erro ao listar os post" + erro)
+        console.log("Erro ao carregar dados do banco: " + erro)
     })
-});
+})
+
 
 app.post("/cadastrar", function (req, res) {
     post
@@ -49,51 +51,47 @@ app.post("/cadastrar", function (req, res) {
         });
 });
 
-app.get("/atualizar/:id", function(req,res){
-    post.findAll({where:{id:req.params.id}}).then(function(post){
-        res.render('atualizar',{post:post})
+
+
+app.get("/excluir/:id", function(req, res){
+    post.destroy({where: {'id': req.params.id}}).then(function(){
+        res.redirect("/consulta");
     }).catch(function(erro){
-        res.send("Erro ao buscar o post" + erro)
+        console.log("Erro ao excluir ou encontrar os dados do banco: " + erro)
     })
 })
 
-app.post("/atualizar/:id",function(req,res){
-    post.update({  
-        nome: req.body.nome,
-        telefone: req.body.telefone,
-        origem: req.body.origem,
-        data_contato: req.body.data_contato,
-        observacao: req.body.observacao,
-    }, {where: {id: req.params.id}}).then(function () {
-            res.send("Dados enviados com sucesso!");
-        })
-        .catch(function (erro) {
-            res.send("Erro: Dados não enviados!" + erro);
-        });
-});
 
-app.post("editar/:id",function(){
+
+app.get("/editar/:id", function(req, res){
+    post.findAll({where: {'id': req.params.id}}).then(function(post){
+        res.render("editar", {post})
+    }).catch(function(erro){
+        console.log("Erro ao carregar dados do banco: " + erro)
+    })
+})
+app.post("/atualizar", function(req, res){
     post.update({
         nome: req.body.nome,
         telefone: req.body.telefone,
         origem: req.body.origem,
         data_contato: req.body.data_contato,
-        observacao: req.body.observacao,
-        }, {where: {id: req.params.id}}).then(function () {
-            res.redirect("/consulta")
-        })
-            .catch(function (erro) {
-                res.send("Erro: Dados não enviados!" + erro);
-                });
+        observacao: req.body.observacao
+    },{
+        where: {
+            id: req.body.id
+        }
+    }).then(function(){
+        res.redirect("/consulta")
+    })
 })
 
-app.get("/excluir/:id", function(req,res){
-    post.destroy({where:{id:req.params.id}}).then(function(){
-        res.redirect("/consulta")
-        }).catch(function(erro){
-            res.send("Erro ao excluir o post" + erro)
-            })
-})
+
+
+handlebarsHelper.registerHelper("eq", function (a, b) {
+    return a === b;
+});
+
 app.listen(8081, function () {
     console.log("rodando o meu express")
 })
